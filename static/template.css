@@ -1,0 +1,41 @@
+body{
+    padding: 50px;
+    background-color:rgba(177, 13, 13, 0.534);
+    font-family: monospace;
+}
+
+#nav > ul{
+    list-style:none;
+}
+
+#nav > ul > li> a{
+    text-decoration: none;
+    font-size: 22px;
+    color: rgb(89, 0, 255);
+
+}
+
+#nav> ul> li> a.active{
+    background-color: rgba(0,0,255,.4);
+    border-radius: 5px;
+    padding: 3px;
+    font-weight: 400;
+    color: yellow;
+
+}
+
+.content{
+    width: 80%;
+    height: 50vh;
+    padding: 50px;
+    border: 2px dashed black;
+}
+
+label{
+    font-size: 20px;
+    color: blue;
+}
+
+label.value{
+    color:green;
+}

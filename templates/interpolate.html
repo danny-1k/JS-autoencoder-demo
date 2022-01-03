@@ -1,0 +1,275 @@
+{% extends "template.html"%}
+
+{% block content %}
+
+<script src="{{url_for('static',filename='net.js')}}"></script>
+
+<div class="images">
+    <div id='dropdowns'>
+        <select id='select1' class='select'>
+            <option value="pullover">pullover</option>
+            <option value="sneaker">sneaker</option>
+            <option value="sandal">sandal</option>
+            <option value="ankle_boot">ankle boot</option>
+            <option value="trouser">trouser</option>
+        </select>
+
+        <select id='select2' class='select' style="margin-left:82%;">
+            <option value="pullover">pullover</option>
+            <option value="sneaker">sneaker</option>
+            <option value="sandal">sandal</option>
+            <option value="ankle_boot">ankle boot</option>
+            <option value="trouser">trouser</option>
+        </select>
+    </div>
+
+
+    <div class="image image1"></div>
+
+    <div class="image image2"></div>
+    <div class="image image3"></div>
+
+
+</div>
+
+<div class="controls">
+    <!-- <input type="range" class="range" id="label_0" max="1" min="0" step="0.1" value="0"><label>Alpha</label> -->
+    <label>Steps: </label><input type="number" id="steps" style="width: 50px;margin-top: 25px;" value="30" min="2">
+    <label>Delay per step (ms): </label><input type="number" id="delay" style="width: 50px;margin-top: 25px;" value="100" min="2">
+    <button id='start' onclick="start()">Start</button>
+    <button id='reset' onclick="reset()">Reset</button>
+</div>
+
+
+<script>
+
+    const delay = ms => new Promise(res => setTimeout(res, ms));
+
+    function clear() {
+        document.querySelector('.image3').querySelectorAll('.imagerow').forEach((row) => {
+            row.querySelectorAll('.pixel').forEach((pix) => {
+                pix.style.backgroundColor = 'white';
+                pix.style.opacity = 1;
+            })
+
+        });
+
+    };
+
+    function reset() {
+        clear();
+        window.CURRENT_IDX = 0;
+        window.STOPPED = true;
+
+    }
+
+
+    function draw_image(x, selector) {
+
+        var flatten_x = flatten(x);
+        var max_val = Math.max(...flatten_x);
+        var min_val = Math.min(...flatten_x);
+        var mean_val = sum(flatten_x) / flatten_x.length;
+
+        var normalized_x = scalar_mul(scalar_add(x, -min_val), 1 / (max_val - min_val));
+
+        for ([i, row] of selector.querySelectorAll('.imagerow').entries()) {
+            for ([j, pix] of row.querySelectorAll('.pixel').entries()) {
+
+                if (x[i][j] < mean_val) {
+                    pix.style.backgroundColor = 'white';
+                    pix.style.opacity = 1 - normalized_x[i][j];
+
+                } else {
+                    pix.style.backgroundColor = 'black';
+                    pix.style.opacity = normalized_x[i][j];
+
+                }
+
+            };
+
+        };
+
+    };
+
+    function draw_start_end(x) {
+        var xhr = new XMLHttpRequest();
+        xhr.open('GET', `/get_inter/${document.querySelector('#select1').value}`, async = false);
+        xhr.send();
+        var first_image = eval(xhr.responseText);
+        window.first_image = first_image;
+
+
+        xhr.open('GET', `/get_inter/${document.querySelector('#select2').value}`, async = false);
+        xhr.send();
+        var second_image = eval(xhr.responseText);
+        window.second_image = second_image;
+
+
+        draw_image(first_image, document.querySelector('.image1'));
+        draw_image(second_image, document.querySelector('.image2'))
+
+
+    }
+
+    function create_pixels() {
+
+        document.querySelectorAll('.image').forEach((image) => {
+
+            for (var i = 0; i < 28; i++) {
+
+                var row = document.createElement('div');
+                row.classList.add('imagerow');
+
+                for (j = 0; j < 28; j++) {
+
+                    var pixel = document.createElement('div');
+                    pixel.classList.add('pixel');
+
+                    row.appendChild(pixel);
+
+                };
+
+                image.appendChild(row);
+            };
+
+
+        });
+    };
+
+    async function start() {
+        window.CURRENT_IDX = 0;
+        window.IS_DONE = false;
+        window.A_LATENT = encoder(reshape(first_image, [1, 28 * 28]), normalize = false);
+        window.B_LATENT = encoder(reshape(second_image, [1, 28 * 28]), normalize = false);
+        window.STOPPED = false;
+
+        document.querySelector("#steps").disabled = true;
+        document.querySelector("#delay").disabled = true;
+        document.querySelectorAll('select').forEach((el) => { el.disabled = true });
+
+
+
+        // for (i = 0; i < document.querySelector("input[type='number']").valueAsNumber+1; i++) {
+        //     do_step();
+        //     await delay(100);
+        //     window.CURRENT_IDX++;
+        // }
+
+        while (!window.IS_DONE && !(document.querySelector('#select1').value == document.querySelector('#select2').value) && !(window.STOPPED)) {
+            do_step();
+            await delay(document.querySelector('#delay').value);
+            window.CURRENT_IDX++;
+            window.IS_DONE = (document.querySelector("input[type='number']").value == window.CURRENT_IDX);
+        };
+
+
+        document.querySelector("#steps").disabled = false;
+        document.querySelector("#delay").disabled = false;
+        document.querySelectorAll('select').forEach((el) => { el.disabled = false });
+
+    };
+    function do_step() {
+        var alpha = window.CURRENT_IDX / document.querySelector("input[type='number']").valueAsNumber;
+        var vec = reshape(vector_add(scalar_mul(flatten(window.A_LATENT), 1 - alpha), scalar_mul(flatten(window.B_LATENT), alpha)), find_dims(window.A_LATENT));
+        vec = decoder(vec);
+
+        img = scalar_mul(flatten(vec), 10);
+
+        img = reshape(img, [28, 28])
+
+        draw_image(img, document.querySelector('.image3'));
+
+    }
+
+    // function interpolate() {
+    //     // console.log(scalar_mul(flatten(x),1-alpha))
+    //     // console.log(scalar_mul(flatten(x),alpha))
+
+    //     var x = encoder(reshape(first_image, [1, 28 * 28]), normalize = false);;
+    //     var y = encoder(reshape(second_image, [1, 28 * 28]), normalize = false);
+    //     var alpha = document.querySelector('.range').value;
+
+
+    //     var vec = reshape(vector_add(scalar_mul(flatten(x), 1 - alpha), scalar_mul(flatten(y), alpha)), find_dims(x));
+    //     vec = decoder(vec);
+
+    //     img = scalar_mul(flatten(vec), 10);
+
+    //     draw_image(reshape(img, [28, 28]), document.querySelector('.image3'));
+    // }
+
+
+    window.onload = () => {
+        create_pixels();
+        draw_start_end();
+
+        // interpolate();
+
+        document.querySelectorAll('.select').forEach((el) => {
+            el.addEventListener('change', (x) => {
+                draw_start_end();
+                // interpolate();
+            });
+        });
+
+        // document.querySelector('.range').addEventListener('input', (x) => {
+        //     interpolate();
+
+        // });
+
+
+    };
+
+</script>
+
+<style>
+    body {
+        background-color: rgba(43, 16, 200, 0.534);
+    }
+
+    .image {
+        width: 280px;
+        height: 280px;
+        border: 1px solid black;
+
+    }
+
+
+    .image1 {
+        float: left;
+    }
+
+    .image2 {
+        float: right;
+    }
+
+    .image3 {
+        margin-left: 36.3%;
+    }
+
+    .controls {
+        margin-left: 36.3%;
+    }
+
+    div.imagerow {
+        height: 10px;
+        display: flex;
+    }
+
+
+    div.pixel {
+        background-color: white;
+        height: 10px;
+        width: 10px;
+        border: 1px solid rgba(0, 0, 0, .5);
+    }
+
+    #dropdowns {
+        margin-bottom: 0;
+        display: flex;
+    }
+</style>
+
+
+{% endblock content%}

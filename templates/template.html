@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FMNIST autoencoder</title>
+    <link rel="stylesheet" href="{{url_for('static',filename='template.css')}}">
+</head>
+
+<body>
+    <div id='nav'>
+
+        <ul>
+
+            <li><a href="{{url_for('generate')}}" class="
+                {% if is_here == 1 %}
+                active
+                {% endif %}
+                "> Generate Images</a></li>
+            <li><a href="{{url_for('interpolate')}}" class="
+                {% if is_here == 2 %}
+                active
+                {% endif %}
+                ">Interpolate between images</a></li>
+        </ul>
+    </div>
+
+    <div class="content">
+
+        {% block content %}
+        {{content}}
+        {% endblock content %}
+    </div>
+</body>
+
+</html>

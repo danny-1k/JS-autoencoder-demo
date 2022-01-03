@@ -1,0 +1,177 @@
+{% extends "template.html"%}
+
+{% block content %}
+<script src="{{url_for('static',filename='net.js')}}"></script>
+
+<div class="controls">
+
+	<div class="slider"><label class="value" id="label_0"></label><input type="range" class="range" id="label_0" max="4.1531" min="-6.9554" step="0.00001"><label>a</label></div>
+	<div class="slider"><label class="value" id="label_1"></label><input type="range" class="range" id="label_1" max="22.4780" min="0" step="0.00001"><label>b</label></div>
+	<div class="slider"><label class="value" id="label_2"></label><input type="range" class="range" id="label_2" max="9.3965" min="0" step="0.00001"><label>c</label></div>
+	<div class="slider"><label class="value" id="label_3"></label><input type="range" class="range" id="label_3" max="7.5306" min="0" step="0.00001"><label>d</label></div>
+	<div class="slider"><label class="value" id="label_4"></label><input type="range" class="range" id="label_4" max="13.3997" min="-2.6121" step="0.00001"><label>e</label></div>
+	<div class="slider"><label class="value" id="label_5"></label><input type="range" class="range" id="label_5" max="6.9246" min="-4.5466" step="0.00001"><label>f</label></div>
+	<div class="slider"><label class="value" id="label_6"></label><input type="range" class="range" id="label_6" max="7.7073" min="-2.1489" step="0.00001"><label>g</label></div>
+	<div class="slider"><label class="value" id="label_7"></label><input type="range" class="range" id="label_7" max="17.1977" min="0" step="0.00001"><label>h</label></div>
+	<div class="slider"><label class="value" id="label_8"></label><input type="range" class="range" id="label_8" max="16.0570" min="0" step="0.00001"><label>i</label></div>
+	<div class="slider"><label class="value" id="label_9"></label><input type="range" class="range" id="label_9" max="14.9388" min="0" step="0.00001"><label>j</label></div>
+	
+
+</div>
+
+
+<script>
+
+	function create_pixels(){
+		var image = document.createElement('div');
+		image.classList.add('image');
+
+		for(var i=0;i<28;i++){
+
+			var row = document.createElement('div');
+			row.classList.add('imagerow');
+
+			for(j=0;j<28;j++){
+
+				var pixel = document.createElement('div');
+				pixel.classList.add('pixel');
+
+				row.appendChild(pixel);
+
+			};
+
+			image.appendChild(row);
+		};
+
+		document.querySelector('.content').appendChild(image)
+
+	};
+
+	function random_slider_val() {
+		var x = Math.random()*25;
+		var y = Math.random()*35;
+
+		document.querySelector('input#label_0').value = x;
+		document.querySelector('input#label_1').value = y;
+
+
+	};
+
+	function draw_image(vals) {
+		var flatten_vals = flatten(vals);
+		var max_val = Math.max(...flatten_vals);
+		var min_val = Math.min(...flatten_vals);
+		var mean_val = sum(flatten_vals)/flatten_vals.length;
+
+		var normalized_vals = scalar_mul(scalar_add(vals,-min_val),1/(max_val-min_val));
+		// console.log(Math.max(...flatten(normalized_vals)))
+
+		// console.log(max_val);
+		// console.log(min_val);
+		// console.log(mean_val);
+
+
+
+		for([i,row] of document.querySelectorAll('.imagerow').entries()){
+			for([j,pix] of row.querySelectorAll('.pixel').entries()){
+				//pix.style.color = 'red';
+
+				if (vals[i][j] <mean_val){
+					pix.style.backgroundColor = 'white';
+					pix.style.opacity = 1-normalized_vals[i][j];
+
+				}else{
+					pix.style.backgroundColor = 'black';
+					pix.style.opacity = normalized_vals[i][j];
+
+				}
+
+			};
+
+		};
+
+	};
+
+
+	function generate_image(){
+		var out = [[]];
+
+		document.querySelectorAll('input').forEach((el)=>{
+			out[0].push(el.valueAsNumber);
+		});
+
+		// console.log(out)
+
+		out = reshape(decoder(out),[28,28]);
+		// console.log(out);
+
+		draw_image(out);
+
+	}
+
+	window.onload = () => {
+
+		create_pixels();
+
+		random_slider_val();
+
+		var inputs = document.querySelectorAll('input[type="range"]');
+
+		for(i=0;i<inputs.length;i++){
+			document.querySelector(`#label_${i}`).innerText = inputs[i].value;
+		}
+
+		generate_image();
+
+		// document.querySelectorAll('input[type="range"]').forEach((el) => {
+		// 	document.querySelector(`#label_${el.id}`).innerText = el.value;
+		// 	generate_image();
+		// });
+	};
+
+	document.querySelectorAll('input[type="range"]').forEach((el) => {
+		el.addEventListener('input', () => {
+			document.querySelector(`#${el.id}`).innerText = el.value;
+			generate_image();
+			
+
+		});
+	});
+
+</script>
+
+<style>
+
+	div.controls{
+		float:left;
+		width: 46%;
+	}
+
+	div.image {
+		width: 280px;
+		height: 280px;
+		border: 1px solid black;
+		float: right;
+
+	}
+
+	div.imagerow {
+		height: 10px;
+		display: flex;
+	}
+
+
+	div.pixel {
+		background-color:blue;
+		height: 10px;
+		width: 10px;
+		border:1px solid rgba(0,0,0,.5);
+	}
+
+	.slider{
+		float:right;
+		margin-right: 20%;
+	}
+
+</style>
+{% endblock content%}
