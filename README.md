@@ -2,7 +2,10 @@
 
 Doing cool stuff with an autoencoder trained on the Fashion MNIST dataset.
 
-![demo](demo.gif)
+## Demo
+https://user-images.githubusercontent.com/88403488/148984980-8bd846d7-9859-4490-b7b6-0c5797039c28.mp4
+
+
 
 ## Running it
 1. Save weights for use in the web app -> ```python generate_js_weights.py```
